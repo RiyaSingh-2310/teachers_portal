@@ -1,0 +1,48 @@
+import type { TeachingAssignment } from "@/types/domain";
+
+export const ASSIGNMENTS: TeachingAssignment[] = [
+  {
+    id: "8a-math",
+    grade: "8",
+    gradeLabel: "Grade 8",
+    section: "A",
+    subject: "Mathematics",
+    isPrimary: true,
+    role: "Lead",
+    studentCount: 32,
+    periodsPerWeek: 6,
+  },
+  {
+    id: "8b-math",
+    grade: "8",
+    gradeLabel: "Grade 8",
+    section: "B",
+    subject: "Mathematics",
+    isPrimary: true,
+    role: "Lead",
+    studentCount: 30,
+    periodsPerWeek: 4,
+  },
+  {
+    id: "7b-math",
+    grade: "7",
+    gradeLabel: "Grade 7",
+    section: "B",
+    subject: "Mathematics",
+    isPrimary: true,
+    role: "Lead",
+    studentCount: 28,
+    periodsPerWeek: 4,
+  },
+  {
+    id: "6a-math",
+    grade: "6",
+    gradeLabel: "Grade 6",
+    section: "A",
+    subject: "Mathematics",
+    isPrimary: false,
+    role: "Co-teacher",
+    studentCount: 31,
+    periodsPerWeek: 2,
+  },
+];
