@@ -1,5 +1,7 @@
-import { PhaseLockedPage } from "@/features/phase/PhaseLockedPage";
+import { ResourcesPage } from "@/features/modules/ResourcesPage";
+
+export const instant = false;
 
 export default function Page() {
-  return <PhaseLockedPage minPhase={2} />;
+  return <ResourcesPage />;
 }

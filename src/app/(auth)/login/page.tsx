@@ -25,7 +25,12 @@ export default function LoginPage() {
         </div>
       </section>
       <section className="flex items-center justify-center bg-background px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <div className="w-full max-w-md">
+          <div className="mb-6 rounded-2xl bg-[linear-gradient(160deg,#1e1b4b,#312e81)] p-5 text-white lg:hidden">
+            <p className="text-xs font-semibold tracking-[0.2em] uppercase opacity-80">{APP_SHORT_NAME}</p>
+            <p className="mt-2 text-lg font-semibold leading-snug">Your classes, your day, in one place.</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
           <div className="mb-6 space-y-1">
             <p className="text-sm font-semibold text-brand">{APP_NAME}</p>
             <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
@@ -34,6 +39,7 @@ export default function LoginPage() {
           <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-muted" />}>
             <LoginForm />
           </Suspense>
+          </div>
         </div>
       </section>
     </div>

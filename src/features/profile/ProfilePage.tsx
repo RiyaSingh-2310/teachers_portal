@@ -62,6 +62,9 @@ export function ProfilePage() {
           <Field label="Joining date" value={profile.joiningDate} />
           <Field label="Department" value={`${profile.department} · Primary`} />
           <Field label="Academic year" value={ACADEMIC_YEAR_LABEL} />
+          <Field label="Qualification" value="M.Sc. Mathematics · sample" />
+          <Field label="Experience" value="Since 10 June 2019" />
+          <Field label="Emergency contact" value="School office only · not a private number" />
         </CardContent>
       </Card>
       <Card>

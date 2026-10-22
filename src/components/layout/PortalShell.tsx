@@ -41,7 +41,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-3 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2">
         Skip to content
       </a>
-      <Sidebar phase={session.phase} unread={unreadQuery.data?.total ?? 0} />
+      <Sidebar unread={unreadQuery.data?.total ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
         <DemoBanner />

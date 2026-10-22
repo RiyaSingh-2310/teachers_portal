@@ -94,7 +94,7 @@ export function LoginForm() {
           {formError}
         </p>
       ) : null}
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
+      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Signing in…" : "Sign In"}
       </Button>
       <p className="rounded-lg bg-info-muted px-3 py-2 text-xs text-info">

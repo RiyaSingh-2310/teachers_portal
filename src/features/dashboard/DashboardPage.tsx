@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ACADEMIC_YEAR_LABEL } from "@/config/app";
 import { CountCard } from "@/features/dashboard/CountCard";
+import { QuickActions } from "@/features/dashboard/QuickActions";
 import {
   AnnouncementsCard,
   AttendanceCard,
@@ -69,6 +70,14 @@ export function DashboardPage() {
       </div>
 
       <NowCard focus={focus} finished={states.length > 0 && !focus} empty={states.length === 0} />
+      <QuickActions />
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <CountCard label="Assigned classes" value={String(data.assignments.length)} href="/app/classes" tone="bg-brand-muted text-brand" />
+        <CountCard label="Assigned subjects" value="1" href="/app/curriculum" tone="bg-accent/15 text-accent" />
+        <CountCard label="Today’s classes" value={String(data.periods.length)} href="/app/day" tone="bg-info-muted text-info" />
+        <CountCard label="Sample leave balance" value="21.5 days" href="/app/leave" tone="bg-warning-muted text-warning" />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <CountCard label="Attendance" value="View only" href="/app/attendance" tone="bg-warning-muted text-warning" />

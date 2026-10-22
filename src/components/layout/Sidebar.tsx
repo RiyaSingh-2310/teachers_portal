@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { APP_SHORT_NAME } from "@/config/app";
-import { visibleNav, type TeacherNavItem } from "@/config/navigation";
+import { isNavActive, visibleNav, type TeacherNavItem } from "@/config/navigation";
 import { useUiStore } from "@/stores/ui";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -21,6 +22,7 @@ function NavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const [openId, setOpenId] = useState<string | null>(null);
   const sections = [
     { label: "Teaching", group: "teaching" as const },
     { label: "School", group: "school" as const },
@@ -40,37 +42,65 @@ function NavList({
               </p>
             ) : null}
             {sectionItems.map((item) => {
-              const active =
-                item.href === "/app" ? pathname === "/app" : pathname.startsWith(item.href);
+              const active = isNavActive(pathname, item.href, item.activeHrefs);
+              const expanded = !collapsed && (openId === item.id || active);
               const Icon = item.icon;
               return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  title={item.label}
-                  onClick={onNavigate}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-brand-muted font-medium text-brand"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    collapsed && "justify-center px-0",
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {!collapsed ? (
-                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                      <span className="truncate">{item.label}</span>
-                      {item.id === "messages" && unread > 0 ? (
-                        <Badge variant="danger" className="px-1.5 py-0 text-[10px]">
-                          {unread > 9 ? "9+" : unread}
-                        </Badge>
+                <div key={item.id}>
+                  <div className={cn("flex items-center", collapsed && "justify-center")}>
+                    <Link
+                      href={item.href}
+                      title={item.label}
+                      onClick={onNavigate}
+                      className={cn(
+                        "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors",
+                        active
+                          ? "bg-brand-muted font-medium text-brand"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        collapsed && "justify-center px-0",
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!collapsed ? (
+                        <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                          <span className="truncate">{item.label}</span>
+                          {item.id === "messages" && unread > 0 ? (
+                            <Badge variant="danger" className="px-1.5 py-0 text-[10px]">
+                              {unread > 9 ? "9+" : unread}
+                            </Badge>
+                          ) : null}
+                        </span>
+                      ) : item.id === "messages" && unread > 0 ? (
+                        <span className="sr-only">{unread} unread messages</span>
                       ) : null}
-                    </span>
-                  ) : item.id === "messages" && unread > 0 ? (
-                    <span className="sr-only">{unread} unread messages</span>
+                    </Link>
+                    {!collapsed && item.children ? (
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                        aria-expanded={expanded}
+                        aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
+                        onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
+                      >
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
+                      </button>
+                    ) : null}
+                  </div>
+                  {expanded && item.children ? (
+                    <div className="mt-1 ml-6 space-y-1 border-l border-border pl-2">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.id}
+                          href={child.href}
+                          onClick={onNavigate}
+                          className="block rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
                   ) : null}
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -80,9 +110,9 @@ function NavList({
   );
 }
 
-export function Sidebar({ phase, unread }: { phase: 1 | 2 | 3; unread: number }) {
+export function Sidebar({ unread }: { unread: number }) {
   const { sidebarCollapsed, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useUiStore();
-  const items = visibleNav(phase);
+  const items = visibleNav();
 
   return (
     <>

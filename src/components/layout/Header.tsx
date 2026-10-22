@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { LogOut, Menu, Settings, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { ACADEMIC_YEAR_LABEL, SCHOOL_NAME } from "@/config/app";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import { Avatar } from "@/components/ui/Avatar";
 import { useUiStore } from "@/stores/ui";
 import { formatLongDate } from "@/lib/dates";
@@ -45,6 +46,7 @@ export function Header() {
       <span className="hidden rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium sm:inline">
         {ACADEMIC_YEAR_LABEL}
       </span>
+      <NotificationBell />
 
       <div ref={menuRef} className="relative">
         <button

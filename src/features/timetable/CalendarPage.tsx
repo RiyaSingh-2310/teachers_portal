@@ -6,16 +6,32 @@ import { useState } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Button } from "@/components/ui/Button";
 import { HOLIDAYS } from "@/mocks/fixture";
+import { EVENTS } from "@/mocks/catalog";
+import { Tabs } from "@/components/ui/Tabs";
 import { toDateKey } from "@/lib/dates";
 
 export function CalendarPage() {
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
+  const [view, setView] = useState("month");
   const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
   const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start, end });
 
   return (
-    <PageContainer title="Calendar" description="Holidays and a way into your own day. You cannot add events.">
+    <PageContainer title="Calendar" description="School dates you can see. You cannot edit a school-wide event." crumbs={[{ label: "Dashboard", href: "/app" }, { label: "Calendar" }]}>
+      <Tabs value={view} onChange={setView} options={[{ id: "month", label: "Month" }, { id: "agenda", label: "Agenda" }]} />
+      {view === "agenda" ? (
+        <ul className="space-y-2">
+          {EVENTS.map((event) => (
+            <li key={event.date + event.label} className="rounded-xl border border-border bg-card px-3 py-3 text-sm">
+              <span className="font-medium">{event.label}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{event.date} · {event.kind}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {view === "month" ? (
+      <>
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={() => setCursor(addMonths(cursor, -1))}>
           Previous
@@ -47,6 +63,8 @@ export function CalendarPage() {
           );
         })}
       </div>
+      </>
+      ) : null}
     </PageContainer>
   );
 }
