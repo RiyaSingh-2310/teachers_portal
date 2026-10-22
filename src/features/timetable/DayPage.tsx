@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { addDays, format, parseISO } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
+import { TeacherIdentity } from "@/components/teacher/TeacherIdentity";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { SIGNED_IN_TEACHER } from "@/config/teacher";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ErrorState } from "@/components/ui/EmptyState";
@@ -47,9 +49,10 @@ export function DayPage() {
       {query.isError ? (
         <ErrorState onRetry={() => void query.refetch()} />
       ) : query.data?.holiday ? (
-        <Card className="border-info/30 bg-info-muted/40">
+        <Card className="border-danger bg-danger-muted">
           <CardContent>
-            <h2 className="text-lg font-semibold">{query.data.holiday}</h2>
+            <p className="text-xs font-semibold text-danger">Holiday</p>
+            <h2 className="text-lg font-semibold text-danger">{query.data.holiday}</h2>
             <p className="text-sm text-muted-foreground">The school is closed.</p>
           </CardContent>
         </Card>
@@ -61,13 +64,12 @@ export function DayPage() {
           {query.data?.periods.map((period) => (
             <Card key={period.id}>
               <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    Period {period.period} · {period.start}–{period.end}
-                  </p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{period.subject?.trim() ? period.subject : "Subject not listed"}</p>
                   <p className="text-sm text-muted-foreground">
-                    {period.gradeLabel} · Section {period.section} · {period.subject} · Room {period.room}
+                    Class {period.gradeLabel.replace("Grade ", "")} · Section {period.section} · {period.start}–{period.end} · Room {period.room}
                   </p>
+                  <TeacherIdentity teacher={SIGNED_IN_TEACHER} variant="compact" className="mt-2" />
                 </div>
                 <div className="flex gap-2">
                   <Link href={`/app/students?grade=${period.gradeLabel.replace("Grade ", "")}&section=${period.section}`} className="inline-flex h-11 items-center rounded-lg border border-border px-3 text-sm">

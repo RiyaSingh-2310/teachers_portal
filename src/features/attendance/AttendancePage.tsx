@@ -5,7 +5,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { addDays, format, parseISO } from "date-fns";
 import { useRouter, useSearchParams } from "next/navigation";
+import { TeacherIdentity } from "@/components/teacher/TeacherIdentity";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { SIGNED_IN_TEACHER } from "@/config/teacher";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -34,20 +36,27 @@ const STATUS_LABEL: Record<AttendanceStatus, string> = {
 export function AttendancePage() {
   const params = useSearchParams();
   const router = useRouter();
-  const section = params.get("section") ?? ASSIGNMENTS[0].id;
+  const grade = params.get("grade") ?? "all";
   const date = params.get("date") ?? toDateKey(new Date());
   const view = params.get("view") ?? "students";
+  const grades = [...new Set(ASSIGNMENTS.map((item) => item.gradeLabel.replace("Grade ", "")))];
+  const sections = ASSIGNMENTS.filter((item) => grade === "all" || item.gradeLabel.replace("Grade ", "") === grade);
+  const section = sections.some((item) => item.id === params.get("section")) ? params.get("section")! : sections[0]?.id ?? ASSIGNMENTS[0].id;
   const [draft, setDraft] = useState<Record<string, AttendanceStatus>>({});
   const query = useQuery({
     queryKey: ["attendance", section, date],
     queryFn: () => getPortalRepository().getRegister(section, date),
   });
 
-  function update(next: { section?: string; date?: string }) {
+  function update(next: { section?: string; date?: string; grade?: string; view?: string }) {
+    const nextGrade = next.grade ?? grade;
+    const allowed = ASSIGNMENTS.filter((item) => nextGrade === "all" || item.gradeLabel.replace("Grade ", "") === nextGrade);
+    const nextSection = allowed.some((item) => item.id === (next.section ?? section)) ? (next.section ?? section) : allowed[0]?.id ?? section;
     const queryString = new URLSearchParams({
-      section: next.section ?? section,
+      section: nextSection,
       date: next.date ?? date,
-      view,
+      view: next.view ?? view,
+      grade: nextGrade,
     });
     router.push(`/app/attendance?${queryString}`);
   }
@@ -72,47 +81,67 @@ export function AttendancePage() {
     >
       <Tabs
         value={view}
-        onChange={(next) => router.push(`/app/attendance?section=${section}&date=${date}&view=${next}`)}
+        onChange={(next) => update({ view: next })}
         options={[
-          { id: "students", label: "Student register" },
+          { id: "students", label: "Student attendance" },
           { id: "mine", label: "My attendance" },
-          { id: "monthly", label: "Monthly" },
-          { id: "short", label: "Short attendance" },
-          { id: "corrections", label: "Corrections" },
+          { id: "history", label: "Attendance history" },
+          { id: "monthly", label: "Monthly report" },
+          { id: "corrections", label: "Correction requests" },
         ]}
       />
       {view === "mine" ? (
         <div className="space-y-3">
-          <MockCaption>Staff attendance is not connected. These figures are a sample, not a punch record.</MockCaption>
+          <TeacherIdentity teacher={SIGNED_IN_TEACHER} variant="card" />
+          <MockCaption>This is the signed-in teacher’s sample attendance. It is not a student register and it is not a punch record.</MockCaption>
           {STAFF_ATTENDANCE.map((row) => (
             <p key={row.month} className="text-sm">{row.month}: {row.present} present, {row.late} late, {row.leave} leave, {row.percent}%.</p>
           ))}
         </div>
       ) : null}
-      {view === "short" ? (
-        <ul className="space-y-2">
-          {SHORT_ATTENDANCE.map((row) => (
-            <li key={row.name} className="rounded-xl border border-border bg-card px-3 py-3 text-sm">{row.name} · {row.className} · {row.percent}% present this month. Extra support, not a penalty list.</li>
-          ))}
-        </ul>
+      {view === "history" ? (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">Open a date to see the student register for the class selected on Student attendance.</p>
+          {[-4, -3, -2, -1, 0].map((offset) => {
+            const key = toDateKey(addDays(parseISO(date), offset));
+            return (
+              <button key={key} type="button" className="block w-full rounded-xl border border-border bg-card px-3 py-3 text-left text-sm" onClick={() => update({ date: key, view: "students" })}>
+                {format(parseISO(key), "EEEE d MMM yyyy")}
+              </button>
+            );
+          })}
+        </div>
       ) : null}
       {view === "corrections" ? (
         <p className="text-sm text-muted-foreground">No correction requests. A request would go to the school office. You cannot approve one here.</p>
       ) : null}
       {view === "monthly" ? (
-        <p className="text-sm text-muted-foreground">October sample: Grade 8 A is 89% present. This is the same fixture percentage shown on the dashboard, not a filed report.</p>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">October sample: Grade 8 A is 89% present. This is the same fixture percentage shown on the dashboard, not a filed report.</p>
+          <ul className="space-y-2">
+            {SHORT_ATTENDANCE.map((row) => (
+              <li key={row.name} className="rounded-xl border border-border bg-card px-3 py-3 text-sm">{row.name} · {row.className} · {row.percent}% present this month. Extra support, not a penalty list.</li>
+            ))}
+          </ul>
+        </div>
       ) : null}
       {view !== "students" ? null : (
       <>
       <MockCaption>Status changes stay in this browser. The school has no class-teacher assignment, so Submit does not file the register.</MockCaption>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <Dropdown
+          label="Class"
+          value={grade}
+          onChange={(value) => update({ grade: value })}
+          options={[{ value: "all", label: "All classes" }, ...grades.map((item) => ({ value: item, label: `Class ${item}` }))]}
+        />
+        <Dropdown
           label="Section"
           value={section}
           onChange={(value) => update({ section: value })}
-          options={ASSIGNMENTS.map((assignment) => ({
+          options={sections.map((assignment) => ({
             value: assignment.id,
-            label: `${assignment.gradeLabel} · ${assignment.section}`,
+            label: `${assignment.gradeLabel} · Section ${assignment.section}`,
           }))}
         />
         <div className="flex items-center gap-2">

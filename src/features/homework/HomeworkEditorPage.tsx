@@ -57,7 +57,11 @@ export function HomeworkEditorPage() {
   });
 
   return (
-    <PageContainer title="New homework" description="Publishing here does not notify students or the school server.">
+    <PageContainer
+      title="New homework"
+      description="Publishing here does not notify students or the school server."
+      crumbs={[{ label: "Dashboard", href: "/app" }, { label: "Homework", href: "/app/homework" }, { label: "New homework" }]}
+    >
       <form className="max-w-xl space-y-4" onSubmit={form.handleSubmit(() => mutation.mutate(true))}>
         <Input label="Title" error={form.formState.errors.title?.message} {...form.register("title")} />
         <label className="flex flex-col gap-1.5 text-sm">

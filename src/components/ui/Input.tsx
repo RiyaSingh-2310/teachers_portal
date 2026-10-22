@@ -18,7 +18,7 @@ export function Input({ className, label, error, hint, id, ...props }: InputProp
         aria-invalid={error ? true : undefined}
         aria-describedby={messageId}
         className={cn(
-          "h-11 w-full rounded-lg border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground",
+          "h-11 w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground",
           error && "border-danger",
           className,
         )}

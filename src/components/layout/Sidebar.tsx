@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ChevronDown, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { APP_SHORT_NAME } from "@/config/app";
-import { isNavActive, visibleNav, type TeacherNavItem } from "@/config/navigation";
+import { isChildActive, isNavActive, visibleNav, type TeacherNavItem } from "@/config/navigation";
 import { useUiStore } from "@/stores/ui";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
@@ -22,7 +22,14 @@ function NavList({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [menuState, setMenuState] = useState<{ path: string; open: Record<string, boolean> }>({
+    path: pathname,
+    open: {},
+  });
+  const openOverrides = menuState.path === pathname ? menuState.open : {};
+  if (menuState.path !== pathname) {
+    setMenuState({ path: pathname, open: {} });
+  }
   const sections = [
     { label: "Teaching", group: "teaching" as const },
     { label: "School", group: "school" as const },
@@ -43,20 +50,24 @@ function NavList({
             ) : null}
             {sectionItems.map((item) => {
               const active = isNavActive(pathname, item.href, item.activeHrefs);
-              const expanded = !collapsed && (openId === item.id || active);
+              const expanded = Boolean(item.children) && !collapsed && (openOverrides[item.id] ?? active);
               const Icon = item.icon;
               return (
                 <div key={item.id}>
-                  <div className={cn("flex items-center", collapsed && "justify-center")}>
+                  <div
+                    className={cn(
+                      "flex w-full items-stretch rounded-lg transition-colors",
+                      active
+                        ? "bg-brand-muted font-medium text-brand"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
                     <Link
                       href={item.href}
                       title={item.label}
                       onClick={onNavigate}
                       className={cn(
-                        "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors",
-                        active
-                          ? "bg-brand-muted font-medium text-brand"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        "flex min-w-0 flex-1 items-center gap-3 px-2.5 py-2 text-sm",
                         collapsed && "justify-center px-0",
                       )}
                     >
@@ -77,10 +88,15 @@ function NavList({
                     {!collapsed && item.children ? (
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+                        className="inline-flex w-9 shrink-0 items-center justify-center"
                         aria-expanded={expanded}
                         aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
-                        onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
+                        onClick={() =>
+                          setMenuState({
+                            path: pathname,
+                            open: { ...openOverrides, [item.id]: !expanded },
+                          })
+                        }
                       >
                         <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
                       </button>
@@ -88,16 +104,25 @@ function NavList({
                   </div>
                   {expanded && item.children ? (
                     <div className="mt-1 ml-6 space-y-1 border-l border-border pl-2">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.id}
-                          href={child.href}
-                          onClick={onNavigate}
-                          className="block rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                      {item.children.map((child) => {
+                        const childActive = isChildActive(pathname, child, item.children ?? []);
+                        return (
+                          <Link
+                            key={child.id}
+                            href={child.href}
+                            onClick={onNavigate}
+                            aria-current={childActive ? "page" : undefined}
+                            className={cn(
+                              "block rounded-lg px-2 py-1.5 text-xs",
+                              childActive
+                                ? "bg-brand-muted font-medium text-brand"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            )}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
                     </div>
                   ) : null}
                 </div>

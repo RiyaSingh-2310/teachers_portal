@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -48,11 +47,7 @@ export function HomeworkDetailPage() {
     <PageContainer
       title={task.title}
       description={`${task.gradeLabel} ${task.section} · ${task.subject}`}
-      actions={
-        <Link href="/app/homework" className="text-sm font-medium text-brand">
-          Homework
-        </Link>
-      }
+      crumbs={[{ label: "Dashboard", href: "/app" }, { label: "Homework", href: "/app/homework" }, { label: task.title }]}
     >
       <p className="text-sm text-muted-foreground">{task.instructions}</p>
       {task.status !== "DRAFT" ? (

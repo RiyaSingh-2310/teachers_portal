@@ -1,8 +1,9 @@
 "use client";
 
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { TeacherIdentity, type TeacherInfo } from "@/components/teacher/TeacherIdentity";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import { leaveDays, leaveTypeName, overlaps, saveLeave, useLeaveApplications, wi
 import { HOLIDAYS } from "@/mocks/fixture";
 import { LEAVE_TYPES, SUBSTITUTES } from "@/mocks/catalog";
 import { toDateKey } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -24,6 +26,7 @@ const TABS = [
   { id: "calendar", label: "Calendar" },
   { id: "substitutes", label: "Substitutes" },
   { id: "policy", label: "Policy" },
+  { id: "reports", label: "Reports" },
 ];
 
 const STATUS_VARIANT = {
@@ -75,6 +78,7 @@ export function LeavePage() {
       {tab === "calendar" ? <LeaveCalendar /> : null}
       {tab === "substitutes" ? <Substitutes /> : null}
       {tab === "policy" ? <Policy /> : null}
+      {tab === "reports" ? <Reports /> : null}
     </PageContainer>
   );
 }
@@ -90,30 +94,55 @@ function Summary({ label, value }: { label: string; value: string }) {
   );
 }
 
+const FILE_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/heic", "image/heif"];
+
 function ApplyForm({ onDone }: { onDone: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [typeId, setTypeId] = useState<string>(LEAVE_TYPES[0].id);
   const [halfDay, setHalfDay] = useState(false);
+  const [halfSession, setHalfSession] = useState<"first" | "second" | "">("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [reason, setReason] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const days = start && end ? leaveDays(start, end, halfDay) : 0;
+  const leaveEnd = halfDay ? start : end;
+  const days = start && leaveEnd ? leaveDays(start, leaveEnd, halfDay) : 0;
+  const selectedType = LEAVE_TYPES.find((type) => type.id === typeId);
+
+  function onFile(file: File | undefined) {
+    if (!file) return;
+    const allowed = FILE_TYPES.includes(file.type) || /\.(pdf|jpe?g|png|heic|heif)$/i.test(file.name);
+    if (!allowed) {
+      setFileName(null);
+      setFileError("Use a JPEG, PNG, HEIC, HEIF, or PDF.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setFileName(null);
+      setFileError("The file must be 5 MB or smaller.");
+      return;
+    }
+    setFileError(null);
+    setFileName(file.name);
+  }
 
   function submit(status: "DRAFT" | "PENDING") {
-    if (!start || !end || days <= 0) {
+    if (!start || !leaveEnd || days <= 0) {
       setError("Choose a start date and an end date on or after it.");
       return;
     }
-    if (halfDay && start !== end) {
-      setError("A half day uses one date. Clear half day or use the same start and end.");
+    if (halfDay && !halfSession) {
+      setError("Choose the first half or the second half.");
       return;
     }
     if (reason.trim().length < 8) {
       setError("Enter a reason of at least 8 characters.");
       return;
     }
-    if (status === "PENDING" && overlaps(start, end)) {
+    if (fileError) return;
+    if (status === "PENDING" && overlaps(start, leaveEnd)) {
       setError("These dates overlap a pending or approved sample request.");
       return;
     }
@@ -121,8 +150,9 @@ function ApplyForm({ onDone }: { onDone: () => void }) {
       typeId,
       typeName: leaveTypeName(typeId),
       halfDay,
+      halfSession: halfDay ? halfSession || null : null,
       start,
-      end,
+      end: leaveEnd,
       days,
       reason: reason.trim(),
       status,
@@ -133,41 +163,61 @@ function ApplyForm({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form className="max-w-xl space-y-4" onSubmit={(event) => { event.preventDefault(); submit("PENDING"); }}>
+    <form className="grid gap-4 lg:grid-cols-2" onSubmit={(event) => { event.preventDefault(); submit("PENDING"); }}>
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium">Leave type</span>
-        <select className="h-11 rounded-lg border border-input bg-card px-3" value={typeId} onChange={(event) => setTypeId(event.target.value)}>
+        <select className="h-11 w-full rounded-lg border border-input bg-card px-3" value={typeId} onChange={(event) => setTypeId(event.target.value)}>
           {LEAVE_TYPES.map((type) => (
             <option key={type.id} value={type.id}>{type.name}</option>
           ))}
         </select>
+        {selectedType ? <span className="text-xs text-muted-foreground">Sample entitlement: {selectedType.allocated} days. This is not a live balance.</span> : null}
       </label>
-      <label className="inline-flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={halfDay} onChange={(event) => setHalfDay(event.target.checked)} />
-        Half day (one date only). The school database does not store half days yet.
-      </label>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input label="Start date" type="date" value={start} onChange={(event) => setStart(event.target.value)} />
-        <Input label="End date" type="date" value={end} onChange={(event) => setEnd(event.target.value)} />
-      </div>
-      <p className="text-sm">Requested days: <strong>{days || "—"}</strong></p>
-      <p className="text-xs text-muted-foreground">Affected sample periods: Grade 8 A Mathematics, Periods 1 and 2, Room 12. You cannot assign a substitute.</p>
-      <label className="flex flex-col gap-1.5 text-sm">
+      <fieldset className="space-y-2 text-sm">
+        <legend className="font-medium">Duration</legend>
+        <label className="mr-4 inline-flex items-center gap-2">
+          <input type="radio" name="duration" checked={!halfDay} onChange={() => { setHalfDay(false); setHalfSession(""); }} />
+          Full day
+        </label>
+        <label className="inline-flex items-center gap-2">
+          <input type="radio" name="duration" checked={halfDay} onChange={() => setHalfDay(true)} />
+          Half day
+        </label>
+        {halfDay ? (
+          <div className="flex flex-wrap gap-4">
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="half" checked={halfSession === "first"} onChange={() => setHalfSession("first")} />
+              First half
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input type="radio" name="half" checked={halfSession === "second"} onChange={() => setHalfSession("second")} />
+              Second half
+            </label>
+          </div>
+        ) : null}
+      </fieldset>
+      <Input label="Start date" type="date" value={start} onChange={(event) => setStart(event.target.value)} />
+      <Input label="End date" type="date" value={halfDay ? start : end} disabled={halfDay} onChange={(event) => setEnd(event.target.value)} />
+      <p className="text-sm lg:col-span-2">Requested days: <strong>{days || "—"}</strong>. Half days stay in this browser. The school record stores whole dates.</p>
+      <label className="flex flex-col gap-1.5 text-sm lg:col-span-2">
         <span className="font-medium">Reason</span>
-        <textarea className="min-h-24 rounded-lg border border-input bg-card px-3 py-2" value={reason} onChange={(event) => setReason(event.target.value)} />
+        <textarea className="min-h-24 w-full rounded-lg border border-input bg-card px-3 py-2" value={reason} onChange={(event) => setReason(event.target.value)} />
       </label>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium">Supporting file (PDF or image, not uploaded)</span>
-        <input
-          type="file"
-          accept="application/pdf,image/jpeg,image/png"
-          onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
-        />
-      </label>
-      {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
-      <div className="flex gap-2">
+      <div className="space-y-2 text-sm lg:col-span-2">
+        <p className="font-medium">Supporting document</p>
+        <input ref={fileRef} type="file" className="sr-only" accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif" onChange={(event) => onFile(event.target.files?.[0])} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()}>{fileName ? "Replace file" : "Choose file"}</Button>
+          {fileName ? <span>{fileName}</span> : <span className="text-muted-foreground">No file selected</span>}
+          {fileName ? <Button type="button" variant="ghost" onClick={() => { setFileName(null); if (fileRef.current) fileRef.current.value = ""; }}>Remove</Button> : null}
+        </div>
+        <p className="text-xs text-muted-foreground">JPEG, PNG, HEIC, HEIF, or PDF. Maximum 5 MB. The name stays in this browser and is not uploaded.</p>
+        {fileError ? <p className="text-sm text-danger" role="alert">{fileError}</p> : null}
+      </div>
+      {error ? <p className="text-sm text-danger lg:col-span-2" role="alert">{error}</p> : null}
+      <div className="flex flex-wrap gap-2 lg:col-span-2">
         <Button type="button" variant="secondary" onClick={() => submit("DRAFT")}>Save draft</Button>
-        <Button type="submit">Submit</Button>
+        <Button type="submit">Apply for leave</Button>
       </div>
     </form>
   );
@@ -217,10 +267,12 @@ function History({
   const applications = useLeaveApplications();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [year, setYear] = useState(ACADEMIC_YEAR_LABEL);
   const rows = applications.filter((item) => {
     const matchesStatus = status === "ALL" || item.status === status;
     const matchesQuery = `${item.reference} ${item.typeName} ${item.reason}`.toLowerCase().includes(query.toLowerCase());
-    return matchesStatus && matchesQuery;
+    const matchesYear = leaveYear(item.start) === year;
+    return matchesStatus && matchesQuery && matchesYear;
   });
   const current = rows.find((item) => item.id === selected) ?? rows[0];
 
@@ -229,6 +281,14 @@ function History({
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input label="Search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Reference or reason" />
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">Leave year</span>
+            <select className="h-11 rounded-lg border border-input bg-card px-3" value={year} onChange={(event) => setYear(event.target.value)}>
+              {[ACADEMIC_YEAR_LABEL, previousLeaveYear(ACADEMIC_YEAR_LABEL)].map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
+            </select>
+          </label>
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-medium">Status</span>
             <select className="h-11 rounded-lg border border-input bg-card px-3" value={status} onChange={(event) => setStatus(event.target.value)}>
@@ -250,7 +310,10 @@ function History({
               </tr>
             </thead>
             <tbody>
-              {rows.map((item) => (
+              {rows.length === 0 ? (
+              <tr><td className="py-3 text-muted-foreground" colSpan={5}>No applications in {year}.</td></tr>
+            ) : null}
+            {rows.map((item) => (
                 <tr key={item.id} className="cursor-pointer border-b border-border" onClick={() => onSelect(item.id)}>
                   <td className="py-2 font-medium">{item.reference}</td>
                   <td>{item.typeName}</td>
@@ -267,8 +330,9 @@ function History({
         <Card>
           <CardContent className="space-y-2">
             <h2 className="font-semibold">{current.reference}</h2>
+            <p className="text-sm">{current.typeName} · {current.start} – {current.end} · {current.days} {current.days === 1 ? "day" : "days"}{current.halfDay ? ` · ${current.halfSession === "second" ? "Second" : "First"} half` : ""}</p>
             <p className="text-sm">{current.reason}</p>
-            <p className="text-xs text-muted-foreground">Applied {current.appliedOn}{current.decisionOn ? ` · Decision ${current.decisionOn}` : ""}</p>
+            <p className="text-xs text-muted-foreground">Applied {current.appliedOn} · Leave year {leaveYear(current.start)}{current.decisionOn ? ` · Decision ${current.decisionOn}` : ""}</p>
             <p className="text-sm">{current.remarks || "No decision remarks."}</p>
             <ol className="space-y-1 text-xs text-muted-foreground">
               <li>Submitted · {current.appliedOn}</li>
@@ -324,9 +388,9 @@ function LeaveCalendar() {
           const holiday = HOLIDAYS[key];
           const leave = marks.get(key);
           return (
-            <div key={key} className="min-h-16 rounded-lg border border-border bg-card p-1.5 text-xs">
-              <span className="font-medium">{format(day, "d")}</span>
-              {holiday ? <span className="mt-1 block text-info">Holiday · {holiday}</span> : null}
+            <div key={key} className={cn("min-h-16 rounded-lg border p-1.5 text-xs", holiday ? "border-danger bg-danger-muted text-danger" : "border-border bg-card")}>
+              <span className={cn("font-medium", holiday && "text-danger")}>{format(day, "d")}</span>
+              {holiday ? <span className="mt-1 block font-semibold leading-snug text-danger">Holiday · {holiday}</span> : null}
               {leave ? <span className="mt-1 block">{leave === "APPROVED" ? "Approved leave" : "Pending leave"}</span> : null}
             </div>
           );
@@ -359,7 +423,11 @@ function Substitutes() {
                 <td>{row.period}</td>
                 <td>{row.className} · {row.subject}</td>
                 <td>{row.room}</td>
-                <td>{row.teacher}</td>
+                <td>
+                  {row.teacher === "Not assigned" || row.teacher === "—" ? row.teacher : (
+                    <TeacherIdentity teacher={substituteTeacher(row.teacher)} variant="compact" />
+                  )}
+                </td>
                 <td>{row.status}</td>
               </tr>
             ))}
@@ -372,11 +440,67 @@ function Substitutes() {
 
 function Policy() {
   return (
-    <ul className="max-w-2xl list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-      <li>Leave types and entitlements are set by the school. The numbers on this page are samples.</li>
-      <li>Half-day leave is shown in the form, and the current database stores whole dates only.</li>
-      <li>A pending or draft request can be withdrawn here. An approved request cannot.</li>
-      <li>This portal does not approve leave and does not assign substitute teachers.</li>
-    </ul>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Read only. Leave year {ACADEMIC_YEAR_LABEL}. Entitlements are sample policy figures, not a live balance.</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-muted-foreground">
+              <th className="py-2">Leave type</th>
+              <th>Sample entitlement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {LEAVE_TYPES.map((type) => (
+              <tr key={type.id} className="border-b border-border">
+                <td className="py-2">{type.name}</td>
+                <td>{type.allocated} days</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+        <li>A half day is the first or second half of one date.</li>
+        <li>A pending or draft request can be withdrawn here. An approved request cannot.</li>
+        <li>This portal does not approve leave and does not assign substitute teachers.</li>
+      </ul>
+    </div>
   );
+}
+
+function Reports() {
+  const applications = useLeaveApplications().filter((item) => leaveYear(item.start) === ACADEMIC_YEAR_LABEL);
+  const used = applications.filter((item) => item.status === "APPROVED").reduce((sum, item) => sum + item.days, 0);
+  const pending = applications.filter((item) => item.status === "PENDING").reduce((sum, item) => sum + item.days, 0);
+  const allocated = LEAVE_TYPES.reduce((sum, type) => sum + type.allocated, 0);
+  const remaining = Math.max(allocated - used - pending, 0);
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">Summary for Meera Iyer in leave year {ACADEMIC_YEAR_LABEL}. Allocated days are the sample policy total, not a payroll balance.</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Summary label="Sample allocated" value={`${allocated} days`} />
+        <Summary label="Used in this list" value={`${used} days`} />
+        <Summary label="Pending" value={`${pending} days`} />
+        <Summary label="Sample remaining" value={`${remaining} days`} />
+      </div>
+      <Button variant="outline" onClick={() => window.print()}>Print summary</Button>
+    </div>
+  );
+}
+
+function leaveYear(date: string) {
+  const year = Number(date.slice(0, 4));
+  const month = Number(date.slice(5, 7));
+  const start = month >= 4 ? year : year - 1;
+  return `${start}–${String((start + 1) % 100).padStart(2, "0")}`;
+}
+
+function previousLeaveYear(label: string) {
+  const start = Number(label.slice(0, 4)) - 1;
+  return `${start}–${String((start + 1) % 100).padStart(2, "0")}`;
+}
+
+function substituteTeacher(name: string): TeacherInfo {
+  return { name, designation: "Teacher", department: "Cover" };
 }

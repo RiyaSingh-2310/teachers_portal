@@ -44,7 +44,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       <Sidebar unread={unreadQuery.data?.total ?? 0} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
-        <DemoBanner />
+        {/* <DemoBanner /> */}
         <main id="main" className="flex-1 overflow-x-hidden px-4 py-6 md:px-6">
           {children}
         </main>

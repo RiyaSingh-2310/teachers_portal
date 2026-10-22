@@ -22,6 +22,7 @@ export interface TeacherNavChild {
   id: string;
   label: string;
   href: string;
+  activeHrefs?: string[];
 }
 
 export interface TeacherNavItem {
@@ -66,10 +67,6 @@ export const NAV_ITEMS: TeacherNavItem[] = [
     icon: CalendarCheck,
     group: "teaching",
     permission: "teacher.attendance.view",
-    children: [
-      { id: "student-attendance", label: "Student attendance", href: "/app/attendance" },
-      { id: "my-attendance", label: "My attendance", href: "/app/attendance?view=mine" },
-    ],
   },
   { id: "homework", label: "Homework", href: "/app/homework", icon: NotebookPen, group: "teaching", permission: "teacher.homework.manage" },
   {
@@ -79,9 +76,10 @@ export const NAV_ITEMS: TeacherNavItem[] = [
     icon: BookMarked,
     group: "teaching",
     permission: "teacher.load.view",
+    activeHrefs: ["/app/curriculum", "/app/syllabus", "/app/lessons"],
     children: [
-      { id: "subjects", label: "Subjects and syllabus", href: "/app/curriculum" },
-      { id: "lessons", label: "Lesson plans", href: "/app/curriculum/lessons" },
+      { id: "subjects", label: "Subjects and syllabus", href: "/app/curriculum", activeHrefs: ["/app/curriculum", "/app/syllabus"] },
+      { id: "lessons", label: "Lesson plans", href: "/app/curriculum/lessons", activeHrefs: ["/app/curriculum/lessons", "/app/lessons"] },
     ],
   },
   {
@@ -91,6 +89,7 @@ export const NAV_ITEMS: TeacherNavItem[] = [
     icon: ClipboardCheck,
     group: "teaching",
     permission: "teacher.portal.access",
+    activeHrefs: ["/app/exams", "/app/performance"],
     children: [
       { id: "exam-schedule", label: "Schedule and marks", href: "/app/exams" },
       { id: "performance", label: "Performance", href: "/app/performance" },
@@ -113,5 +112,26 @@ export function visibleNav() {
 
 export function isNavActive(pathname: string, href: string, activeHrefs?: string[]) {
   const targets = activeHrefs ?? [href];
-  return targets.some((target) => (target === "/app" ? pathname === "/app" : pathname === target || pathname.startsWith(`${target}/`)));
+  return targets.some((target) => matchesNavTarget(pathname, target));
+}
+
+function matchesNavTarget(pathname: string, target: string) {
+  return target === "/app" ? pathname === "/app" : pathname === target || pathname.startsWith(`${target}/`);
+}
+
+function matchLength(pathname: string, targets: string[]) {
+  return targets.reduce((best, target) => {
+    return matchesNavTarget(pathname, target) ? Math.max(best, target.length) : best;
+  }, 0);
+}
+
+export function isChildActive(pathname: string, child: TeacherNavChild, children: TeacherNavChild[]) {
+  const targets = child.activeHrefs ?? [child.href];
+  const length = matchLength(pathname, targets);
+  if (length === 0) return false;
+  return children.every((other) => {
+    if (other.id === child.id) return true;
+    const otherLength = matchLength(pathname, other.activeHrefs ?? [other.href]);
+    return otherLength <= length;
+  });
 }

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { Avatar } from "@/components/ui/Avatar";
+import { TeacherIdentity } from "@/components/teacher/TeacherIdentity";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -46,13 +46,19 @@ export function ProfilePage() {
   return (
     <PageContainer title="Profile" description="The employment record in this demonstration. The school record is not connected.">
       <Card>
-        <CardContent className="flex items-center gap-4">
-          <Avatar name={profile.displayName} src={profile.photoUrl} className="h-16 w-16 text-base" />
-          <div>
-            <h2 className="text-xl font-semibold">{profile.displayName}</h2>
-            <p className="text-sm text-muted-foreground">{profile.designation}</p>
-            <Badge variant="success" className="mt-2">{profile.status}</Badge>
-          </div>
+        <CardContent className="space-y-3">
+          <TeacherIdentity
+            teacher={{
+              name: profile.displayName,
+              designation: profile.designation,
+              department: profile.department,
+              employeeId: profile.employeeNumber,
+              photoUrl: profile.photoUrl,
+            }}
+            variant="card"
+            className="border-0 p-0"
+          />
+          <Badge variant="success">{profile.status}</Badge>
         </CardContent>
       </Card>
       <Card>

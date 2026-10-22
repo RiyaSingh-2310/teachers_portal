@@ -55,7 +55,7 @@ export function Dropdown<T extends string = string>({
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       {label ? (
-        <span id={labelId} className={cn("mb-1.5 block text-xs font-medium text-muted-foreground", hideLabel && "sr-only")}>
+        <span id={labelId} className={cn("mb-1.5 block text-sm font-medium text-foreground", hideLabel && "sr-only")}>
           {label}
         </span>
       ) : null}
@@ -66,12 +66,12 @@ export function Dropdown<T extends string = string>({
         aria-controls={listboxId}
         aria-labelledby={label ? labelId : undefined}
         onClick={() => setOpen((current) => !current)}
-        className="flex h-10 w-full min-w-[9.5rem] items-center gap-2 rounded-lg border border-border bg-card px-2.5 text-left hover:bg-muted"
+        className="flex h-11 w-full min-w-[9.5rem] items-center justify-between gap-2 rounded-lg border border-input bg-card px-3 text-left text-sm hover:bg-muted focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
       >
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+        <span className={cn("min-w-0 flex-1 truncate", selected ? "text-foreground" : "text-muted-foreground")}>
           {selected?.label ?? placeholder}
         </span>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground", open && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
       {open ? (
         <ul

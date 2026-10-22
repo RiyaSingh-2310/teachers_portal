@@ -11,6 +11,7 @@ export interface LeaveApplication {
   typeId: string;
   typeName: string;
   halfDay: boolean;
+  halfSession: "first" | "second" | null;
   start: string;
   end: string;
   days: number;
@@ -29,6 +30,7 @@ const seed: LeaveApplication[] = [
     typeId: "casual",
     typeName: "Casual leave",
     halfDay: false,
+    halfSession: null,
     start: "2026-11-16",
     end: "2026-11-17",
     days: 2,
@@ -45,6 +47,7 @@ const seed: LeaveApplication[] = [
     typeId: "sick",
     typeName: "Sick leave",
     halfDay: false,
+    halfSession: null,
     start: "2026-09-04",
     end: "2026-09-04",
     days: 1,
@@ -61,6 +64,7 @@ const seed: LeaveApplication[] = [
     typeId: "earned",
     typeName: "Earned leave",
     halfDay: true,
+    halfSession: "first",
     start: "2026-08-12",
     end: "2026-08-12",
     days: 0.5,

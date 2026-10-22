@@ -1,4 +1,4 @@
-import { format, isWeekend } from "date-fns";
+import { eachDayOfInterval, format, isWeekend } from "date-fns";
 import { ASSIGNMENTS } from "@/mocks/assignments";
 import { HOLIDAYS } from "@/mocks/notices";
 
@@ -52,6 +52,11 @@ export const PERIOD_TIMES = [
   { period: 3, start: "10:20", end: "11:05" },
   { period: 6, start: "13:10", end: "13:55" },
 ];
+
+export function periodsInRange(start: Date, end: Date) {
+  if (end < start) return [];
+  return eachDayOfInterval({ start, end }).flatMap((date) => periodsForDate(date));
+}
 
 export function periodsForDate(date: Date) {
   const key = format(date, "yyyy-MM-dd");
