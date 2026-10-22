@@ -9,11 +9,20 @@ import {
   FolderOpen,
   LayoutDashboard,
   LifeBuoy,
+  Mail,
   MessageSquare,
+  Package,
+  UtensilsCrossed,
   NotebookPen,
+  Salad,
   Settings,
   ShieldAlert,
+  ShieldCheck,
+  ShoppingBag,
+  ShoppingCart,
   UserRound,
+  Wallet,
+  BadgeIndianRupee,
   type LucideIcon,
 } from "lucide-react";
 import type { TeacherPermission } from "@/types/domain";
@@ -22,6 +31,7 @@ export interface TeacherNavChild {
   id: string;
   label: string;
   href: string;
+  icon?: LucideIcon;
   activeHrefs?: string[];
 }
 
@@ -97,6 +107,28 @@ export const NAV_ITEMS: TeacherNavItem[] = [
   },
   { id: "resources", label: "Resources", href: "/app/resources", icon: FolderOpen, group: "teaching", permission: "teacher.portal.access" },
   { id: "behaviour", label: "Behaviour", href: "/app/behaviour", icon: ShieldAlert, group: "teaching", permission: "teacher.portal.access" },
+  {
+    id: "canteen",
+    label: "Canteen / Cafeteria",
+    href: "/app/canteen",
+    icon: UtensilsCrossed,
+    group: "school",
+    permission: "teacher.portal.access",
+    activeHrefs: ["/app/canteen"],
+    children: [
+      { id: "canteen-dashboard", label: "Canteen Dashboard", href: "/app/canteen", icon: LayoutDashboard },
+      { id: "canteen-menu", label: "Menu", href: "/app/canteen/menu", icon: UtensilsCrossed },
+      { id: "canteen-food", label: "Food Item", href: "/app/canteen/food-items", icon: Salad },
+      { id: "canteen-pricing", label: "Pricing", href: "/app/canteen/pricing", icon: BadgeIndianRupee },
+      { id: "canteen-mail", label: "Mail", href: "/app/canteen/mail", icon: Mail },
+      { id: "canteen-orders", label: "Orders / Sales", href: "/app/canteen/orders", icon: ShoppingBag },
+      { id: "canteen-wallet", label: "Mail / Wallet", href: "/app/canteen/wallet", icon: Wallet },
+      { id: "canteen-stock", label: "Stock Consumption", href: "/app/canteen/stock", icon: Package },
+      { id: "canteen-purchase", label: "Food Purchase", href: "/app/canteen/purchases", icon: ShoppingCart },
+      { id: "canteen-safety", label: "Food Safety / Compliance", href: "/app/canteen/safety", icon: ShieldCheck },
+      { id: "canteen-report", label: "Canteen Report", href: "/app/canteen/reports", icon: BarChart3 },
+    ],
+  },
   { id: "leave", label: "Leave", href: "/app/leave", icon: Briefcase, group: "school", permission: "teacher.portal.access" },
   { id: "calendar", label: "Calendar", href: "/app/calendar", icon: CalendarDays, group: "school", permission: "teacher.timetable.view" },
   { id: "messages", label: "Messages", href: "/app/messages", icon: MessageSquare, group: "school", permission: "teacher.communication.read" },

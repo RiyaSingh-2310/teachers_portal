@@ -113,13 +113,14 @@ function NavList({
                             onClick={onNavigate}
                             aria-current={childActive ? "page" : undefined}
                             className={cn(
-                              "block rounded-lg px-2 py-1.5 text-xs",
+                              "flex min-h-9 items-center gap-2 rounded-lg px-2 py-2 text-xs",
                               childActive
                                 ? "bg-brand-muted font-medium text-brand"
                                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
                             )}
                           >
-                            {child.label}
+                            {child.icon ? <child.icon className="h-3.5 w-3.5 shrink-0" /> : null}
+                            <span className="min-w-0 leading-snug">{child.label}</span>
                           </Link>
                         );
                       })}
